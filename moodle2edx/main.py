@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # File:   moodle2edx/main.py
 # Date:   19-July-2012
@@ -35,7 +36,7 @@ class Moodle2Edx(object):
             mdir = tempfile.mkdtemp(prefix="moodle2edx")
             curdir = os.path.abspath('.')
             os.chdir(mdir)
-            os.system('tar xzf %s' % (infnabs))
+            os.system('unzip %s' % (infnabs))
             os.chdir(curdir)
         else:
             mdir = infn
@@ -128,7 +129,14 @@ class Moodle2Edx(object):
             fileid = mfile.get('id')
             url = '/static/%s' % fname2
             self.staticfiles[fileid] = (url, fname)
-            os.system('cp %s/files/%s/%s "%s/static/%s"' % (self.moodle_dir, fhash[:2], fhash, self.edxdir, fname2))
+            from_file = '%s/files/%s/%s' % (self.moodle_dir, fhash[:2], fhash)
+            target_file =  '%s/static/%s' % (self.edxdir, fname2)
+            command = ['cp', from_file, target_file]
+            
+            run_s = ' '.join(command)
+            print run_s
+            import subprocess
+            subprocess.call(command)
             if self.verbose:
                 print "      %s" % fname
                 sys.stdout.flush()
@@ -251,17 +259,26 @@ class Moodle2Edx(object):
         xml = etree.parse('%s/%s/section.xml' % (self.moodle_dir, sdir)).getroot()
         name = xml.find('name').text
         contents = xml.find('summary').text
-        contents = contents.replace('<o:p></o:p>','')
+        try:
+            contents = contents.replace('<o:p></o:p>','')
+        except:
+            pass
         # if moodle author didn't bother to set name, but instead used <h2> then grab name from that
         if not name or name=='$@NULL@$':
-            m = re.search('<h2(| align="left")>(.*?)</h2>', contents)
-            if m:
-                name = html2text.html2text(m.group(2))
-                name = name.replace('\n','').replace('\r','')
+            try:
+                m = re.search('<h2(| align="left")>(.*?)</h2>', contents)
+                if m:
+                    name = html2text.html2text(m.group(2))
+                    name = name.replace('\n','').replace('\r','')
+            except:
+                name = None
         if not name or name=='$@NULL@$':
-            htext = html2text.html2text(contents)
-            # print "Warning: empty name for section %s, contents=%s ..." %  (sectionid, htext.split('\n')[0].strip())
-            name = htext[:50].split('\n')[0].strip()
+            try:
+                htext = html2text.html2text(contents)
+                # print "Warning: empty name for section %s, contents=%s ..." %  (sectionid, htext.split('\n')[0].strip())
+                name = htext[:50].split('\n')[0].strip()
+            except:
+                name = None
         if not name:
             name = activity_title.strip().split('\n')[0].strip()[:50]
         name = name.strip()
@@ -366,11 +383,15 @@ class Moodle2Edx(object):
     
     def import_quiz(self, adir,seq,qdict):
         qxml = etree.parse('%s/%s/quiz.xml' % (self.moodle_dir, adir)).getroot()
+        print '%s/%s/quiz.xml' % (self.moodle_dir, adir)
         name = qxml.find('.//name').text
         seq.set('name',name)
         # TODO: import intro, do points
         for qinst in qxml.findall('.//question_instance'):
-            qnum = qinst.find('question').text
+            try:
+                qnum = qinst.find('question').text
+            except:
+                qnum = qinst.find('questionid').text
             question = qdict[qnum]
             vert = etree.SubElement(seq,'vertical')	# one problem in each vertical
             problem = etree.SubElement(vert,'problem')

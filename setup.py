@@ -33,6 +33,7 @@ setup(
     install_requires=['lxml',
                       'path.py',
                       'html2text',
+                      'libxml2-utils',
                       ],
     package_dir={'moodle2edx': 'moodle2edx'},
     package_data={ 'moodle2edx': ['testdat/*'] },
