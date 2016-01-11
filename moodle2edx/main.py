@@ -527,7 +527,7 @@ class Moodle2Edx(object):
 #--------------------------------------------------------------------------
 # command line
 
-def CommandLine():
+def command_line():
     parser = optparse.OptionParser(usage="usage: %prog [options] [moodle_backup.mbz | moodle_backup_dir]",
                                    version="%prog 1.0")
     parser.add_option('-v', '--verbose', 
@@ -572,3 +572,6 @@ def CommandLine():
                      clean_up_html=opts.clean_up_html,
     )
     
+
+if __name__ == '__main__':
+    command_line()
